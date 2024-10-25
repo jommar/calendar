@@ -21,28 +21,7 @@
       }
       @media print {
         @page {
-          margin: 0;
           size: A4 landscape;
-        }
-        /* .portrait {
-          @page {
-            size: A4 portrait;
-          }
-        }
-        .landscape {
-          @page {
-            size: A4 landscape;
-          }
-        } */
-        body {
-          margin: 0;
-          padding: 0;
-        }
-        .paper-container {
-          page-break-inside: avoid;
-          page-break-after: always;
-          width: 100% !important;
-          height: calc(100vh - 5mm) !important;
         }
       }
       .one-seventh {
@@ -96,57 +75,64 @@
                 ></v-text-field>
               </v-col>
             </v-row>
-            <!-- <v-radio-group v-model="paper.orientation">
-              <v-radio label="Landscape" value="landscape"></v-radio>
-              <v-radio label="Portrait" value="portrait"></v-radio>
-              <v-radio label="Square" value="square"></v-radio>
-            </v-radio-group> -->
-            <!-- <v-btn>Export PDF</v-btn> -->
+            <v-row v-show="false">
+              <v-col>
+                <v-radio-group v-model="orientation" row>
+                  <v-radio label="Landscape" value="landscape"></v-radio>
+                  <v-radio label="Portrait" value="portrait"></v-radio>
+                </v-radio-group>
+              </v-col>
+              <v-col>
+                <v-select outlined v-model="size" :items="sizes"></v-select>
+              </v-col>
+            </v-row>
           </div>
           <div
             :style="calendarStyle"
             v-if="backgroundImage && calendar"
-            v-for="{month} in calendar?.months"
+            v-for="({month},i) in calendar?.months"
             class="paper-container"
-            :class="paper.orientation"
+            :class="orientation"
           >
-            <div class="month-title">{{month}} {{calendar.year}}</div>
-            <section class="mx-8">
-              <v-row>
-                <v-col
-                  class="one-seventh text-center text-uppercase font-weight-bold"
-                  :class="{
+            <div :style="calendarBGStyle(i)">
+              <div class="month-title">{{month}} {{calendar.year}}</div>
+              <section class="mx-8">
+                <v-row>
+                  <v-col
+                    class="one-seventh text-center text-uppercase font-weight-bold"
+                    :class="{
                     'red--text':week === 'Sunday',
                   }"
-                  v-for="week in calendar?.weeks"
-                >
-                  {{week}}
-                </v-col>
-              </v-row>
-              <v-row>
-                <v-col
-                  class="one-seventh"
-                  v-for="(spacer,index) in getFirstDaySpacers(month)"
-                  :key="`${month}-start-spacer-${index}`"
-                >
-                  {{ spacer }}
-                </v-col>
-                <v-col
-                  class="one-seventh day-cell"
-                  v-for="(day,index) in getMonthDays(month)"
-                  :key="`${month}-${index}`"
-                >
-                  <span class="day-num">{{ day.day }}</span>
-                </v-col>
-                <v-col
-                  class="one-seventh"
-                  v-for="(spacer,index) in getLastDaySpacers(month)"
-                  :key="`${month}-end-spacer-${index}`"
-                >
-                  {{ spacer }}
-                </v-col>
-              </v-row>
-            </section>
+                    v-for="week in calendar?.weeks"
+                  >
+                    {{week}}
+                  </v-col>
+                </v-row>
+                <v-row>
+                  <v-col
+                    class="one-seventh"
+                    v-for="(spacer,index) in getFirstDaySpacers(month)"
+                    :key="`${month}-start-spacer-${index}`"
+                  >
+                    {{ spacer }}
+                  </v-col>
+                  <v-col
+                    class="one-seventh day-cell"
+                    v-for="(day,index) in getMonthDays(month)"
+                    :key="`${month}-${index}`"
+                  >
+                    <span class="day-num">{{ day.day }}</span>
+                  </v-col>
+                  <v-col
+                    class="one-seventh"
+                    v-for="(spacer,index) in getLastDaySpacers(month)"
+                    :key="`${month}-end-spacer-${index}`"
+                  >
+                    {{ spacer }}
+                  </v-col>
+                </v-row>
+              </section>
+            </div>
           </div>
         </v-container>
       </v-app>
@@ -157,32 +143,52 @@
     <script src="https://cdn.jsdelivr.net/npm/vuetify@2.x/dist/vuetify.js"></script>
 
     <script>
+      OFFSET_Y = 14;
+      OFFSET_X = OFFSET_Y / 2;
+
       new Vue({
         el: "#app",
         vuetify: new Vuetify(),
         data() {
           return {
             backgroundImage: "",
-            paper: {
-              size: {
-                width: "297mm",
-                height: "210mm",
-              },
-              orientation: "landscape",
-            },
+            orientation: "landscape",
+            size: "A4",
             calendar: null,
             year: new Date().getFullYear(),
+            sizes: ["A4"],
           };
         },
         computed: {
           calendarStyle() {
             return {
-              backgroundImage: `url(${this.backgroundImage})`,
               overflow: "hidden",
               position: "relative",
-              width: this.getWidth(),
-              height: this.getHeight(),
-              backgroundSize: "cover",
+              width: this.paperSize.width,
+              height: this.paperSize.height,
+            };
+          },
+          paperSize() {
+            const sizeMap = {
+              A4: {
+                width: 210,
+                height: 297,
+              },
+              A5: {
+                width: 148,
+                height: 210,
+              },
+            };
+            if (this.orientation === "portrait") {
+              return {
+                width: `${sizeMap[this.size].width - OFFSET_X}mm`,
+                height: `${sizeMap[this.size].height - OFFSET_Y}mm`,
+              };
+            }
+
+            return {
+              width: `${sizeMap[this.size].height - OFFSET_X}mm`,
+              height: `${sizeMap[this.size].width - OFFSET_Y}mm`,
             };
           },
         },
@@ -190,6 +196,15 @@
           init() {
             this.backgroundImage = null;
             this.calendar = null;
+          },
+          calendarBGStyle(index) {
+            return {
+              "margin-top": index === 0 ? undefined : `${OFFSET_Y / 4}mm`,
+              backgroundImage: `url(${this.backgroundImage})`,
+              width: "100%",
+              height: "100%",
+              backgroundSize: "cover",
+            };
           },
           onYearInput(year) {
             this.generateFullYearCalendar(year);
@@ -231,22 +246,6 @@
             return (
               this.calendar?.months?.find((m) => m.month === month)?.days || []
             );
-          },
-          getWidth() {
-            if (this.paper.orientation === "landscape")
-              return this.paper.size.width;
-            if (this.paper.orientation === "portrait")
-              return this.paper.size.height;
-            if (this.paper.orientation === "square")
-              return this.paper.size.height;
-          },
-          getHeight() {
-            if (this.paper.orientation === "landscape")
-              return this.paper.size.height;
-            if (this.paper.orientation === "portrait")
-              return this.paper.size.width;
-            if (this.paper.orientation === "square")
-              return this.paper.size.height;
           },
           onFileChange(file) {
             if (!file) {
