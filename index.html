@@ -95,7 +95,11 @@
             :class="orientation"
           >
             <div :style="calendarBGStyle(i)">
-              <div class="month-title">{{month}} {{calendar.year}}</div>
+              <div class="month-title d-flex justify-space-between">
+                <span class="ml-8">{{calendar.year}}</span>
+                <span>{{month}}</span>
+                <span class="mr-8">{{calendar.year}}</span>
+              </div>
               <section class="mx-8">
                 <v-row>
                   <v-col
@@ -111,24 +115,13 @@
                 <v-row>
                   <v-col
                     class="one-seventh"
-                    v-for="(spacer,index) in getFirstDaySpacers(month)"
-                    :key="`${month}-start-spacer-${index}`"
-                  >
-                    {{ spacer }}
-                  </v-col>
-                  <v-col
-                    class="one-seventh day-cell"
-                    v-for="(day,index) in getMonthDays(month)"
+                    :class="{
+                      'day-cell':!!day.day
+                    }"
+                    v-for="(day,index) in getDaysWithPrefixSuffix(month)"
                     :key="`${month}-${index}`"
                   >
                     <span class="day-num">{{ day.day }}</span>
-                  </v-col>
-                  <v-col
-                    class="one-seventh"
-                    v-for="(spacer,index) in getLastDaySpacers(month)"
-                    :key="`${month}-end-spacer-${index}`"
-                  >
-                    {{ spacer }}
                   </v-col>
                 </v-row>
               </section>
@@ -196,6 +189,13 @@
           init() {
             this.backgroundImage = null;
             this.calendar = null;
+          },
+          getDaysWithPrefixSuffix(month) {
+            const days = this.getMonthDays(month);
+            const firstDaySpacers = this.getFirstDaySpacers(month);
+            const lastDaySpacers = this.getLastDaySpacers(month);
+
+            return [...firstDaySpacers, ...days, ...lastDaySpacers];
           },
           calendarBGStyle(index) {
             return {
